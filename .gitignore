@@ -1,0 +1,17 @@
+cat <<EOT > .gitignore
+# Dependencies
+node_modules/
+dist/
+
+# Environments & Secrets
+.env
+.env.*
+
+# Logs
+logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+EOT
