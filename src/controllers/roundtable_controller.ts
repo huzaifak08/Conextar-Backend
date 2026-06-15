@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { Roundtable, RoundtableParticipant, User } from "../db/models";
+import { createLiveKitRoom } from "../utils/livekit";
 
 export const createRoundtable = async (
   req: Request,
@@ -26,6 +27,10 @@ export const createRoundtable = async (
 
     const roundtableId = uuidv4();
 
+    // 🚀 Step 1: Provision the 10-participant room inside LiveKit using the UUID as the room handle string name
+    await createLiveKitRoom(roundtableId);
+
+    // Step 2: Establish persistent cluster reference database registries
     const roundtable = await Roundtable.create({
       id: roundtableId,
       name,
@@ -34,7 +39,7 @@ export const createRoundtable = async (
       status: "active",
     });
 
-    const participant = await RoundtableParticipant.create({
+    await RoundtableParticipant.create({
       id: uuidv4(),
       userId,
       roundtableId,
@@ -43,9 +48,9 @@ export const createRoundtable = async (
 
     return res.status(201).json({
       status: true,
-      message: "Roundtable successfully established.",
+      message:
+        "Roundtable and 10-person LiveKit workspace successfully established.",
       roundtable,
-      participant,
     });
   } catch (error: any) {
     return res.status(500).json({ status: false, message: error.message });

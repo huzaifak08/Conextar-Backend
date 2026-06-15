@@ -1,4 +1,4 @@
-import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
+import { AccessToken, Room, RoomServiceClient } from "livekit-server-sdk";
 
 const getCredentials = () => {
   const apiKey = process.env.LIVEKIT_API_KEY;
@@ -55,4 +55,29 @@ export const generateLiveKitToken = async (
   });
 
   return await token.toJwt();
+};
+
+export const createLiveKitRoom = async (roomName: string): Promise<Room> => {
+  try {
+    const { apiKey, apiSecret, livekitUrl } = getCredentials();
+    const roomService = new RoomServiceClient(livekitUrl, apiKey, apiSecret);
+
+    const roomOptions = {
+      name: roomName,
+      emptyTimeout: 0,
+      maxParticipants: 10,
+    };
+    const room = await roomService.createRoom(roomOptions);
+
+    console.log(
+      `🎙️  [LIVEKIT] -> Secure 10-seat room initialized on host: ${room.name}`,
+    );
+
+    return room;
+  } catch (error: any) {
+    console.error(`❌ LiveKit Room Creation Exception: ${error.message}`);
+    throw new Error(
+      `Failed to provision LiveKit real-time streaming media room: ${error.message}`,
+    );
+  }
 };

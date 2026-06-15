@@ -1,29 +1,32 @@
 import dotenv from "dotenv";
-
 import express, { Request, Response } from "express";
 import cors from "cors";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import { sequelize } from "./db/models";
 import { generateLiveKitToken, verifyLiveKitConnection } from "./utils/livekit";
 import { sendVerificationCode } from "./utils/mailer";
 import globalRoutes from "./routes";
+import { initializeSocketHandler } from "./sockets/socket_handler";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ==============================================================================
-// MIDDLEWARES
-// ==============================================================================
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  },
+});
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ==============================================================================
-// CORE ENDPOINTS
-// ==============================================================================
-
-// 1. System Health Check
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({
     status: "healthy",
@@ -32,7 +35,6 @@ app.get("/health", (req: Request, res: Response) => {
   });
 });
 
-// 2. Real-Time LiveKit Token Endpoint
 app.post(
   "/api/v1/livekit/token",
   async (req: Request, res: Response): Promise<any> => {
@@ -55,7 +57,6 @@ app.post(
   },
 );
 
-// 3. Email Verification Sandbox Route
 app.get("/api/v1/test-email", async (req: Request, res: Response) => {
   const success = await sendVerificationCode(
     "huzaifa.uno@gmail.com",
@@ -72,24 +73,20 @@ app.get("/api/v1/test-email", async (req: Request, res: Response) => {
   }
 });
 
-// 4. Global Router Subsystem Mounting Point (Auth endpoints, controllers, etc.)
 app.use("/api/v1", globalRoutes);
 
-// ==============================================================================
-// SERVER INITIALIZATION & HANDSHAKE
-// ==============================================================================
+initializeSocketHandler(io);
+
 async function startServer() {
   try {
     console.log("🚀 STARTING CONEXTAR BACKEND ENGINE");
 
-    // 1. Verify Encrypted AWS RDS Connection Handshake
     console.log("🔄 Authenticating secure handshake with AWS RDS Database...");
     await sequelize.authenticate();
     console.log(
       "📡 [DATABASE] -> AWS RDS Database connected successfully via SSL.",
     );
 
-    // 2. Verify LiveKit Node Instance Stability
     console.log("🔄 Testing connectivity to LiveKit Signalling Server...");
     const isLiveKitStable = await verifyLiveKitConnection();
     if (isLiveKitStable) {
@@ -102,10 +99,11 @@ async function startServer() {
       );
     }
 
-    // 3. Kick off Express Listener
     console.log("\n--------------------------------------------------");
-    app.listen(PORT, () => {
-      console.log(`🟢 Conextar server is fully armed on port ${PORT}`);
+    httpServer.listen(PORT, () => {
+      console.log(
+        `🟢 Conextar server + WebSockets are fully armed on port ${PORT}`,
+      );
       console.log("--------------------------------------------------\n");
     });
   } catch (error) {
@@ -116,7 +114,6 @@ async function startServer() {
 }
 
 startServer();
-
 // npx sequelize-cli migration:generate --name <NAME>
 // npx sequelize-cli db:migrate --name <NAME>
 // npx sequelize-cli db:migrate:undo --name <NAME>

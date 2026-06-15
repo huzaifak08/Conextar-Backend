@@ -1,0 +1,12 @@
+services:
+  livekit:
+    image: livekit/livekit-server
+    container_name: livekit-server
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    command: --dev --node-ip 192.168.1.15 --bind 0.0.0.0
+    restart: unless-stopped
+
+# docker compose up -d --force-recreate
