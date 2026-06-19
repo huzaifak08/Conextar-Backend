@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { User } from "../db/models";
-import { sendVerificationCode } from "../utils/mailer";
+import { sendVerificationCodeWithResend } from "../utils/mailer";
 import { v4 as uuidv4 } from "uuid";
 
 const ACCESS_EXPIRY = "15m";
@@ -56,7 +56,7 @@ export const register = async (req: Request, res: Response): Promise<any> => {
       isVerified: false,
     });
 
-    await sendVerificationCode(email, otp, "registration");
+    await sendVerificationCodeWithResend(email, otp, "registration");
 
     return res.status(201).json({
       status: true,
@@ -155,7 +155,7 @@ export const resendVerificationCode = async (
     user.otpExpiresAt = freshExpiry;
     await user.save();
 
-    await sendVerificationCode(email, freshOtp, "registration");
+    await sendVerificationCodeWithResend(email, freshOtp, "registration");
 
     return res.status(200).json({
       status: true,

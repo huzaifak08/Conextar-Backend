@@ -5,7 +5,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { sequelize } from "./db/models";
 import { generateLiveKitToken, verifyLiveKitConnection } from "./utils/livekit";
-import { sendVerificationCode } from "./utils/mailer";
+import { sendVerificationCodeWithResend } from "./utils/mailer";
 import globalRoutes from "./routes";
 import { initializeSocketHandler } from "./sockets/socket_handler";
 
@@ -58,7 +58,7 @@ app.post(
 );
 
 app.get("/api/v1/test-email", async (req: Request, res: Response) => {
-  const success = await sendVerificationCode(
+  const success = await sendVerificationCodeWithResend(
     "huzaifa.uno@gmail.com",
     "123456",
     "registration",
